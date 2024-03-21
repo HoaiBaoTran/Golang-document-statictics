@@ -45,7 +45,7 @@ Number of lines: 23
 Number of words: 150							
 Number of characters: 817						
 Average word length: 5.712963					
-Execution Time 854.666µs
+Execution Time 259.167µs
 
 file.txt 											
 
@@ -53,7 +53,7 @@ Number of lines: 125565
 Number of words: 3762705			
 Number of characters: 20490810			
 Average word length: 6.772658		
-Execution Time 1.403031292s
+Execution Time 1.386328584s
 
 file_1MB.txt	 (basically file.txt * 5 times)			
 
@@ -61,7 +61,7 @@ Number of lines: 502265
 Number of words: 15050820				
 Number of characters: 81963240				
 Average word length: 6.772658	
-Execution Time 6.203735042s
+Execution Time 5.676478333s
 
 Method concurrency: Read all lines of file and split into chunks (default = 5)
 Run concurrency statistics each chunk and merge them with fan in pattern

@@ -63,9 +63,7 @@ func handleChunk(chunk []string) <-chan Result {
 
 func splitFile(lines []string, chunkNumber int, wg *sync.WaitGroup) [][]string {
 	chunks := make([][]string, chunkNumber)
-
 	lengthPerChunks := len(lines) / chunkNumber
-	wg.Add(chunkNumber)
 
 	for i := 0; i < chunkNumber; i++ {
 		go func(i int) {
@@ -79,8 +77,6 @@ func splitFile(lines []string, chunkNumber int, wg *sync.WaitGroup) [][]string {
 			wg.Done()
 		}(i)
 	}
-
-	wg.Wait()
 
 	return chunks
 }
@@ -106,12 +102,13 @@ func splitFileMethod(filePath string, startTime time.Time) {
 	var wg sync.WaitGroup
 
 	lines := readingFile(filePath)
-	chunks := splitFile(lines, chunkNumber, &wg)
 
-	wg.Add(1)
+	wg.Add(chunkNumber + 1)
 	go func() {
 		result.frequency, result.totalWordLength = statistics.CountFrequencyFromLine(lines, &wg)
 	}()
+
+	chunks := splitFile(lines, chunkNumber, &wg)
 
 	results := make([]<-chan Result, len(chunks))
 	for index, chunk := range chunks {
