@@ -54,8 +54,7 @@ func writeResultFile(result Result, executionTime time.Duration) {
 	fmt.Printf("Number of characters: %d\n", result.charCount)
 	fmt.Printf("Average word length: %f\n", result.averageWordLength)
 	// fmt.Println("Frequency:")
-	// fmt.Println(mapString)
-	fmt.Println(executionTime)
+	// fmt.Println(result.frequency)
 	fmt.Println("Execution Time:", executionTime)
 
 	w.WriteString(fmt.Sprintln("Execution Time", executionTime))
@@ -78,7 +77,7 @@ func countWordAndCharFromLine(line string) (int, int) {
 }
 
 func countFrequencyFromLine(line string, frequency map[string]int) map[string]int {
-	regexPattern := `(\w+[.]\w+)|(\w+)`
+	regexPattern := `(\w+)`
 	re := regexp.MustCompile(regexPattern)
 	words := strings.Fields(line)
 	for _, word := range words {
@@ -86,12 +85,7 @@ func countFrequencyFromLine(line string, frequency map[string]int) map[string]in
 		if len(formattedWords) < 1 {
 			continue
 		}
-
-		if _, isContain := frequency[formattedWords[0]]; isContain {
-			frequency[formattedWords[0]]++
-		} else {
-			frequency[formattedWords[0]] = 1
-		}
+		frequency[formattedWords[0]]++
 	}
 	return frequency
 }
@@ -134,8 +128,8 @@ func statisticsDocs(filePath string, startTime time.Time) {
 
 func main() {
 	startTime := time.Now()
-	// filePath := "documents/requirement_en.txt"
-	// filePath := "documents/file.txt"
-	filePath := "documents/file_1MB.txt"
+	// filePath := "../documents/requirement_en.txt"
+	// filePath := "../documents/file.txt"
+	filePath := "../documents/file_1MB.txt"
 	statisticsDocs(filePath, startTime)
 }

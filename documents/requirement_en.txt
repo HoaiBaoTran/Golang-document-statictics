@@ -14,10 +14,10 @@ Use os package to read file content.
 Use functional sequences and regex to process text.
 Perform calculation functions according to each data statistics mentioned above.
 Handle possible errors
-Save the information on out file results, as [rs_date_time.txt]
+Save the information on out file results
 [Data, please prepare a long paragraph in English, txt file]
  
-In addition, in the [rs_date_time.txt] file, you must specify the cheap time to complete the program. Try to optimize it to run as quickly as possible.
+In addition, in the file, you must specify the cheap time to complete the program. Try to optimize it to run as quickly as possible.
 Just apply all the knowledge you have learned
  
 After finishing, I will ask more questions about the part you coded, so be prepared!!!
