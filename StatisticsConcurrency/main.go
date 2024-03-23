@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,7 +11,7 @@ import (
 )
 
 type Result struct {
-	lineCount, wordCount, charCount, totalWordLength int32
+	lineCount, wordCount, charCount, totalWordLength int
 	frequency                                        map[string]int
 }
 
@@ -48,15 +48,16 @@ func merge(workerChannels ...<-chan Result) <-chan Result {
 func handleChunk(chunk []string) <-chan Result {
 	chunkResultChan := make(chan Result)
 	go func() {
+		frequencyChan := statistics.CountFrequencyFromLine(strings.Join(chunk, " "))
 		defer close(chunkResultChan)
 		chunkResult := Result{}
 		for _, line := range chunk {
 			wordCount, charCount := statistics.WordAndCharCount(line)
-			chunkResult.wordCount += int32(wordCount)
-			chunkResult.charCount += int32(charCount)
+			chunkResult.wordCount += wordCount
+			chunkResult.charCount += charCount
 		}
+		chunkResult.frequency = <-frequencyChan
 		chunkResultChan <- chunkResult
-
 	}()
 	return chunkResultChan
 }
@@ -81,34 +82,35 @@ func splitFile(lines []string, chunkNumber int, wg *sync.WaitGroup) [][]string {
 	return chunks
 }
 
-func readingFile(filePath string) []string {
+func readingFile(filePath string) ([]string, int) {
 	file, err := os.Open(filePath)
 	statistics.CheckError(err)
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	lines := make([]string, 0)
+	lineCount := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		lines = append(lines, line)
-		result.lineCount++
+		if line != "" {
+			lines = append(lines, line)
+		}
+		lineCount++
 	}
 	statistics.CheckError(scanner.Err())
-
-	return lines
+	return lines, lineCount
 }
 
 func splitFileMethod(filePath string, startTime time.Time) {
 	var wg sync.WaitGroup
 
-	lines := readingFile(filePath)
+	lines, lineCount := readingFile(filePath)
 
-	wg.Add(chunkNumber + 1)
-	go func() {
-		result.frequency, result.totalWordLength = statistics.CountFrequencyFromLine(lines, &wg)
-	}()
+	result.lineCount = lineCount
 
+	wg.Add(chunkNumber)
 	chunks := splitFile(lines, chunkNumber, &wg)
+	wg.Wait()
 
 	results := make([]<-chan Result, len(chunks))
 	for index, chunk := range chunks {
@@ -119,65 +121,34 @@ func splitFileMethod(filePath string, startTime time.Time) {
 	for i := range returnChan {
 		result.charCount += i.charCount
 		result.wordCount += i.wordCount
+		for key, value := range i.frequency {
+			if _, isKey := result.frequency[key]; !isKey {
+				result.totalWordLength += len(key)
+				result.frequency[key] = value
+			} else {
+				result.frequency[key] += value
+			}
+		}
 	}
 
-	wg.Wait()
 	executionTime := time.Since(startTime)
-	writeResultFile(executionTime)
-}
 
-func writeResultFile(executionTime time.Duration) {
-	mapString := ""
-	for key, value := range result.frequency {
-		mapString += fmt.Sprintf("[%s: %d]\n", key, value)
-	}
+	statistics.WriteResultToFile(
+		result.lineCount,
+		result.wordCount,
+		result.charCount,
+		float64(result.totalWordLength)/float64(len(result.frequency)),
+		result.frequency,
+		executionTime,
+	)
 
-	lines := []string{
-		fmt.Sprintf("Number of lines: %d\n", result.lineCount),
-		fmt.Sprintf("Number of words: %d\n", result.wordCount),
-		fmt.Sprintf("Number of characters: %d\n", result.charCount),
-		fmt.Sprintf("Average word length: %f\n", float64(result.totalWordLength)/float64(len(result.frequency))),
-		fmt.Sprintln("Frequency:"),
-		fmt.Sprintln(mapString),
-	}
-
-	current_date := time.Now().Format("02-01-2006")
-	current_time := time.Now().Format("15-04-05")
-	outputFileName := fmt.Sprintf("results/rs_%s_%s.txt", current_date, current_time)
-	outputFile, err := os.Create(outputFileName)
-
-	if err != nil {
-		fmt.Println("error while writing")
-		fmt.Println(err)
-	}
-
-	w := bufio.NewWriter(outputFile)
-
-	for _, line := range lines {
-		w.WriteString(line)
-	}
-
-	fmt.Printf("Number of lines: %d\n", result.lineCount)
-	fmt.Printf("Number of words: %d\n", result.wordCount)
-	fmt.Printf("Number of characters: %d\n", result.charCount)
-	fmt.Printf("Average word length: %f\n", float64(result.totalWordLength)/float64(len(result.frequency)))
-	fmt.Println("Frequency:")
-	// fmt.Println(mapString)
-	// fmt.Println(executionTime)
-	fmt.Println("Execution Time:", executionTime)
-
-	w.WriteString(fmt.Sprintln("Execution Time", executionTime))
-	w.Flush()
-
-	fmt.Println("Write file successfully")
-	outputFile.Close()
 }
 
 func main() {
 	startTime := time.Now()
 
-	// filePath := "./documents/requirement_en.txt"
-	// filePath := "./documents/file.txt"
-	filePath := "./documents/file_1MB.txt"
+	// filePath := "../documents/requirement_en.txt"
+	// filePath := "../documents/file.txt"
+	filePath := "../documents/file_1MB.txt"
 	splitFileMethod(filePath, startTime)
 }
